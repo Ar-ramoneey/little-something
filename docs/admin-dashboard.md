@@ -47,3 +47,5 @@ Frontend role checks are only for UX. RLS is the authority for data access.
 6. Confirm delivered/failed/pending counts reflect outbox rows.
 7. With no response row, confirm the empty-state message.
 8. Use Refresh after external data changes; use Log out to end the session.
+
+To produce that empty state on the live project before the first real visitor, use the [clean reset runbook](reset.md). It removes test responses, history, sessions, rate limits, and notification rows without touching schema or authentication.

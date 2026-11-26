@@ -233,7 +233,20 @@ Functions must also use Vercel's supported export shape: named HTTP method expor
 
 ---
 
-## Outstanding requirements before deployment
+## 11. Clean reset before sharing the proposal
+
+Once production tests pass and before sending the link to the first real visitor, clear all development and testing data:
+
+1. In the Supabase **SQL Editor**, paste the full contents of `supabase/reset_proposal_data.sql` and run the whole file as one query.
+2. Confirm the verification output: five data sets with `remaining_rows = 0`, the admin still listed with `app_role = 'admin'`, and all five tables present.
+3. Hard-refresh `/admin/responses` and confirm the empty state: no answer, no history, no notification history, no old timestamps.
+4. In a private browser window, enter the real invitation code and submit one answer; confirm the email and the new dashboard row.
+
+The script uses transactional `DELETE` statements scoped to `roqeebah-001`. It preserves the schema, admin account, authentication, configuration, and unrelated rows. Do **not** run it after the real visitor answers. Full details and post-reset checks are in [`docs/reset.md`](docs/reset.md).
+
+---
+
+## 12. Outstanding requirements before deployment
 
 The following cannot be completed from this workspace and must be supplied in the Vercel/Supabase/Resend dashboards:
 
