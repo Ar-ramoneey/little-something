@@ -21,7 +21,7 @@ import { callRpc, statusOf, type RpcResult } from '../server/lib/supabase'
 import { parseResponseRequestBody } from '../server/lib/validation'
 
 export const config = {
-  runtime: 'nodejs22.x',
+  runtime: 'nodejs',
 }
 
 function withCookie(response: Response, cookie: string): Response {

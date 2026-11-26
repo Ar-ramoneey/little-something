@@ -1,7 +1,7 @@
 import { handleInvitationVerification } from '../server/lib/invitationEndpoint'
 
 export const config = {
-  runtime: 'nodejs22.x',
+  runtime: 'nodejs',
 }
 
 // Backward-compatible alias. New clients should use /api/invitation/verify.

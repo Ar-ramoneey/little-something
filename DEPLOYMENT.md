@@ -5,7 +5,7 @@ This guide is for deploying through the **Vercel web dashboard**. It does not de
 ## Project shape
 
 - **Frontend:** React + Vite + TypeScript, built with `npm run build` into `dist/`.
-- **API:** Vercel Functions in `api/invitation.ts` and `api/responses.ts`, both using the `nodejs22.x` runtime.
+- **API:** Vercel Functions in `api/invitation/verify.ts`, `api/invitation.ts`, and `api/responses.ts`, each declaring `runtime: 'nodejs'`. The Node.js major version is pinned to 22.x through `engines.node` in `package.json`.
 - **Database:** Supabase Postgres with five migrations in `supabase/migrations/`.
 - **Authentication:** Supabase Auth for the private admin area only.
 - **Email:** Resend, called only from server-side code.
@@ -140,7 +140,7 @@ Confirm these settings on the import screen or in **Project Settings → Build &
 - **Build Command:** `npm run build`.
 - **Output Directory:** `dist`.
 - **Install Command:** `npm install` (default).
-- **Node.js Version:** 22.x, matching the API runtime.
+- **Node.js Version:** 22.x, selected automatically from `engines.node` in `package.json`. Function `config.runtime` must be `'nodejs'`; Vercel does not accept version strings such as `nodejs22.x` there.
 
 These are also declared in `vercel.json`:
 
