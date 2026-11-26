@@ -160,6 +160,8 @@ No catch-all rewrite is used, so `/api/invitation/verify`, `/api/invitation`, an
 
 Vercel runs functions under `api/` as plain Node.js ES modules. Every relative import in `api/` and `server/` therefore includes the compiled `.js` extension, for example `import { getSupabaseConfig } from './env.js'`. The source files remain `.ts`; TypeScript's bundler resolution accepts the `.js` specifier. Do not remove those extensions, or the deployed functions will fail with `ERR_MODULE_NOT_FOUND`.
 
+Functions must also use Vercel's supported export shape: named HTTP method exports (`GET`, `POST`, `PATCH`) or a default object with a `fetch` method. A bare `export default function` is loaded but never invoked, causing requests to hang until the platform timeout.
+
 ---
 
 ## 8. Deploy from the Vercel dashboard

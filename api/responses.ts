@@ -244,28 +244,21 @@ async function handlePatch(request: Request): Promise<Response> {
   }
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  try {
-    switch (request.method) {
-      case 'GET':
-        return await handleGet(request)
-      case 'POST':
-        return await handlePost(request)
-      case 'PATCH':
-        return await handlePatch(request)
-      default:
-        return jsonResponse(
-          {
-            error: {
-              code: 'method_not_allowed',
-              message: 'Method not allowed.',
-            },
-          },
-          405,
-          { allow: 'GET, POST, PATCH' },
-        )
+function safely(
+  handler: (request: Request) => Promise<Response>,
+): (request: Request) => Promise<Response> {
+  return async (request: Request): Promise<Response> => {
+    try {
+      return await handler(request)
+    } catch (error) {
+      return errorResponse(error)
     }
-  } catch (error) {
-    return errorResponse(error)
   }
 }
+
+// Vercel Functions must expose named HTTP method exports (or a default object
+// with a fetch method). A bare default function is loaded but never invoked,
+// which makes requests hang until the platform times them out.
+export const GET = safely(handleGet)
+export const POST = safely(handlePost)
+export const PATCH = safely(handlePatch)

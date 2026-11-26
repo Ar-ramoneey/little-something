@@ -5,4 +5,6 @@ export const config = {
 }
 
 // Backward-compatible alias. New clients should use /api/invitation/verify.
-export default handleInvitationVerification
+export async function POST(request: Request): Promise<Response> {
+  return handleInvitationVerification(request)
+}
