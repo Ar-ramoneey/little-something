@@ -1,7 +1,7 @@
-import { getInvitationCode, getProposalId, getSessionTtlSeconds } from './env'
-import { ApiError } from './http'
-import { createSessionToken, verifyInvitationCode } from './security'
-import { callRpc, statusOf } from './supabase'
+import { getInvitationCode, getProposalId, getSessionTtlSeconds } from './env.js'
+import { ApiError } from './http.js'
+import { createSessionToken, verifyInvitationCode } from './security.js'
+import { callRpc, statusOf } from './supabase.js'
 
 export type InvitationSessionStart =
   | {

@@ -1,4 +1,4 @@
-import { handleInvitationVerification } from '../server/lib/invitationEndpoint'
+import { handleInvitationVerification } from '../server/lib/invitationEndpoint.js'
 
 export const config = {
   runtime: 'nodejs',

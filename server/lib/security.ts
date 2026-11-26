@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { getAllowedOrigins, getSessionSecret, SESSION_COOKIE_NAME } from './env'
-import { ApiError } from './http'
+import { getAllowedOrigins, getSessionSecret, SESSION_COOKIE_NAME } from './env.js'
+import { ApiError } from './http.js'
 
 const HEX_SHA256 = /^[0-9a-f]{64}$/
 

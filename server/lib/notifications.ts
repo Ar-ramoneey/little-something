@@ -2,8 +2,8 @@ import {
   getNotificationConfig,
   missingNotificationConfig,
   type NotificationConfig,
-} from './env'
-import { callRpc } from './supabase'
+} from './env.js'
+import { callRpc } from './supabase.js'
 
 interface NotificationRecord {
   id: string

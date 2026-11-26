@@ -1,7 +1,7 @@
-import { errorResponse, jsonResponse, rateLimitedResponse, readJsonBody } from './http'
-import { invitationCodeError, startInvitationSession } from './invitation'
-import { assertAllowedOrigin, getClientIpHash, sessionCookie } from './security'
-import { parseInvitationCodeBody } from './validation'
+import { errorResponse, jsonResponse, rateLimitedResponse, readJsonBody } from './http.js'
+import { invitationCodeError, startInvitationSession } from './invitation.js'
+import { assertAllowedOrigin, getClientIpHash, sessionCookie } from './security.js'
+import { parseInvitationCodeBody } from './validation.js'
 
 // Shared handler for the canonical /api/invitation/verify route and its
 // backward-compatible /api/invitation alias. It only validates the code and

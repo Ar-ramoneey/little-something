@@ -1,4 +1,4 @@
-import { getSessionTtlSeconds } from '../server/lib/env'
+import { getSessionTtlSeconds } from '../server/lib/env.js'
 import {
   ApiError,
   errorResponse,
@@ -6,7 +6,7 @@ import {
   rateLimitedResponse,
   readJsonBody,
   unauthorizedResponse,
-} from '../server/lib/http'
+} from '../server/lib/http.js'
 import {
   assertAllowedOrigin,
   clearSessionCookie,
@@ -14,11 +14,11 @@ import {
   readSessionToken,
   sessionCookie,
   sessionTokenHash,
-} from '../server/lib/security'
-import { invitationCodeError, startInvitationSession } from '../server/lib/invitation'
-import { sendPendingNotifications } from '../server/lib/notifications'
-import { callRpc, statusOf, type RpcResult } from '../server/lib/supabase'
-import { parseResponseRequestBody } from '../server/lib/validation'
+} from '../server/lib/security.js'
+import { invitationCodeError, startInvitationSession } from '../server/lib/invitation.js'
+import { sendPendingNotifications } from '../server/lib/notifications.js'
+import { callRpc, statusOf, type RpcResult } from '../server/lib/supabase.js'
+import { parseResponseRequestBody } from '../server/lib/validation.js'
 
 export const config = {
   runtime: 'nodejs',

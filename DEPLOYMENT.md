@@ -158,6 +158,8 @@ These are also declared in `vercel.json`:
 
 No catch-all rewrite is used, so `/api/invitation/verify`, `/api/invitation`, and `/api/responses` remain Vercel Functions. The plain `/api/invitation` route is a backward-compatible alias.
 
+Vercel runs functions under `api/` as plain Node.js ES modules. Every relative import in `api/` and `server/` therefore includes the compiled `.js` extension, for example `import { getSupabaseConfig } from './env.js'`. The source files remain `.ts`; TypeScript's bundler resolution accepts the `.js` specifier. Do not remove those extensions, or the deployed functions will fail with `ERR_MODULE_NOT_FOUND`.
+
 ---
 
 ## 8. Deploy from the Vercel dashboard
