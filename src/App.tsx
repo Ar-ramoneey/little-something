@@ -37,6 +37,11 @@ type SubmitMode = 'initial' | 'change'
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
+// The letter button must always advance, even if the initial session check is
+// slow or hangs. A returning visitor with a saved answer is still handled once
+// that check finishes, but the UI never blocks on it.
+const SESSION_CHECK_UI_WAIT_MS = 900
+
 function screenForResponse(response: ResponseValue): Screen {
   if (response === 'yes') return 'accepted'
   if (response === 'thinking') return 'thinking'
@@ -106,7 +111,10 @@ function ProposalApp() {
   // We wait for the initial session check so a returning visitor sees her saved
   // answer instead of being asked to verify again.
   const continueAfterLetter = useCallback(async () => {
-    await sessionCheckRef.current
+    await Promise.race([
+      sessionCheckRef.current,
+      new Promise<void>((resolve) => setTimeout(resolve, SESSION_CHECK_UI_WAIT_MS)),
+    ])
 
     const state = sessionStateRef.current
     const record = currentResponseRef.current

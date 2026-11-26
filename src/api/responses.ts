@@ -32,13 +32,26 @@ function detailFromPayload(payload: unknown): { code: string; message: string } 
   return { code, message }
 }
 
+const REQUEST_TIMEOUT_MS = 12000
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  if (init.signal) {
+    if (init.signal.aborted) {
+      controller.abort()
+    } else {
+      init.signal.addEventListener('abort', () => controller.abort(), { once: true })
+    }
+  }
 
   try {
     response = await fetch(path, {
       ...init,
       credentials: 'same-origin',
+      signal: controller.signal,
       headers: {
         Accept: 'application/json',
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
@@ -51,6 +64,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       0,
       'network_error',
     )
+  } finally {
+    clearTimeout(timeoutId)
   }
 
   let payload: unknown
