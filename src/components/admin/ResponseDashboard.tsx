@@ -14,6 +14,9 @@ import {
 } from '../../lib/adminFormat'
 import { navigate } from '../../lib/router'
 import { getBrowserSupabase } from '../../lib/supabaseClient'
+import InvitationManagement from './InvitationManagement'
+import ProposalReset from './ProposalReset'
+import SendInvitation from './SendInvitation'
 
 function SectionHeading({ children }: { children: string }) {
   return (
@@ -299,6 +302,12 @@ export default function ResponseDashboard() {
             </section>
 
             <NotificationStatus notifications={notifications} />
+
+            <div className="space-y-8 border-t border-[#EFE0DA] pt-10">
+              <InvitationManagement />
+              <SendInvitation />
+              <ProposalReset onReset={() => void load()} />
+            </div>
           </div>
         )}
       </div>

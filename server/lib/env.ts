@@ -79,6 +79,11 @@ export function getProposalId(): string {
   return readOptional('PROPOSAL_ID') ?? 'roqeebah-001'
 }
 
+// The public website origin, used in invitation emails and admin previews.
+export function getAppOrigin(): string {
+  return getConfiguredAppOrigin()
+}
+
 export function getSessionTtlSeconds(): number {
   const raw = readOptional('INVITATION_SESSION_TTL_SECONDS')
   const seconds = raw ? Number(raw) : 604800
@@ -167,6 +172,19 @@ export function getNotificationConfig(): NotificationConfig {
     fromEmail: readRequired('RESEND_FROM_EMAIL'),
     recipientEmail: readRequired('ADMIN_NOTIFICATION_EMAIL'),
     dashboardUrl: getAdminDashboardUrl(),
+    timeoutMs: getNotificationTimeoutMs(),
+  }
+}
+
+// Invitation emails do not need the response-notification recipient.
+export function getInvitationEmailConfig(): {
+  apiKey: string
+  fromEmail: string
+  timeoutMs: number
+} {
+  return {
+    apiKey: readRequired('RESEND_API_KEY'),
+    fromEmail: readRequired('RESEND_FROM_EMAIL'),
     timeoutMs: getNotificationTimeoutMs(),
   }
 }

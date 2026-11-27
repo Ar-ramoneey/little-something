@@ -5,8 +5,8 @@ This guide is for deploying through the **Vercel web dashboard**. It does not de
 ## Project shape
 
 - **Frontend:** React + Vite + TypeScript, built with `npm run build` into `dist/`.
-- **API:** Vercel Functions in `api/invitation/verify.ts`, `api/invitation.ts`, and `api/responses.ts`, each declaring `runtime: 'nodejs'`. The Node.js major version is pinned to 22.x through `engines.node` in `package.json`.
-- **Database:** Supabase Postgres with five migrations in `supabase/migrations/`.
+- **API:** Vercel Functions in `api/invitation/verify.ts`, `api/invitation.ts`, `api/responses.ts`, `api/admin/invitation.ts`, `api/admin/invitation/preview.ts`, `api/admin/invitation/send.ts`, and `api/admin/reset.ts`, each declaring `runtime: 'nodejs'`. The Node.js major version is pinned to 22.x through `engines.node` in `package.json`.
+- **Database:** Supabase Postgres with six migrations in `supabase/migrations/`.
 - **Authentication:** Supabase Auth for the private admin area only.
 - **Email:** Resend, called only from server-side code.
 
@@ -36,8 +36,9 @@ Open the Supabase **SQL Editor** and run these files in this exact order. Paste 
 3. `supabase/migrations/20261126020000_response_notifications.sql`
 4. `supabase/migrations/20261126030000_admin_auth.sql`
 5. `supabase/migrations/20261126040000_admin_response_dashboard.sql`
+6. `supabase/migrations/20261126100000_invitation_management.sql`
 
-The migrations create response storage, append-only history, invitation sessions, rate limits, the notification outbox, admin RLS policies, and the admin outbox read policy. They are idempotent where applicable, but run them once, in order.
+The migrations create response storage, append-only history, invitation sessions, rate limits, the notification outbox, admin RLS policies, the admin outbox read policy, database-backed invitation settings, and a non-content admin audit log. They are idempotent where applicable, but run them once, in order.
 
 Afterward, confirm these tables exist under **Table Editor**:
 
@@ -46,6 +47,10 @@ Afterward, confirm these tables exist under **Table Editor**:
 - `invitation_sessions`
 - `invitation_rate_limits`
 - `response_notifications`
+- `invitation_settings`
+- `admin_audit_events`
+
+After migration 6, generate the first invitation code from the admin dashboard. The database-backed code then becomes authoritative; `INVITATION_CODE` is only a bootstrap fallback until that point.
 
 ---
 
@@ -93,7 +98,7 @@ In Vercel, open **Project Settings → Environment Variables** and add every var
 | `SUPABASE_URL` | Server only | Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Server config; mirrored to browser | `sb_publishable_…` key |
 | `SUPABASE_SECRET_KEY` | Server only | `sb_secret_…` key |
-| `INVITATION_CODE` | Server only | The real private invitation code |
+| `INVITATION_CODE` | Server only | Temporary bootstrap code; ignored after the first dashboard-generated code |
 | `SESSION_SECRET` | Server only | Long random string, at least 32 characters |
 | `ADMIN_NOTIFICATION_EMAIL` | Server only | Real admin recipient |
 | `RESEND_API_KEY` | Server only | Resend API key |
@@ -116,6 +121,7 @@ Optional variables:
 Security rules:
 
 - Never add `SUPABASE_SECRET_KEY`, `SESSION_SECRET`, `RESEND_API_KEY`, `INVITATION_CODE`, or any bearer token as a `VITE_` variable.
+- The admin dashboard generates, stores, and emails codes through server endpoints. Do not hardcode a code in frontend code or rely on the environment variable as permanent storage.
 - `VITE_SUPABASE_PUBLISHABLE_KEY` is safe because it is a publishable key, not a secret.
 - Rotating `SESSION_SECRET` invalidates all existing invitation sessions.
 - Do not commit `.env` files. `.gitignore` excludes `.env`, `.env.*`, `*.env`, and `*.env.*` except `*.env.example`.
@@ -156,7 +162,7 @@ These are also declared in `vercel.json`:
 }
 ```
 
-No catch-all rewrite is used, so `/api/invitation/verify`, `/api/invitation`, and `/api/responses` remain Vercel Functions. The plain `/api/invitation` route is a backward-compatible alias.
+No catch-all rewrite is used, so `/api/invitation/verify`, `/api/invitation`, `/api/responses`, and all `/api/admin/*` routes remain Vercel Functions. The plain `/api/invitation` route is a backward-compatible alias.
 
 Vercel runs functions under `api/` as plain Node.js ES modules. Every relative import in `api/` and `server/` therefore includes the compiled `.js` extension, for example `import { getSupabaseConfig } from './env.js'`. The source files remain `.ts`; TypeScript's bundler resolution accepts the `.js` specifier. Do not remove those extensions, or the deployed functions will fail with `ERR_MODULE_NOT_FOUND`.
 
@@ -173,6 +179,10 @@ Functions must also use Vercel's supported export shape: named HTTP method expor
    - `/api/invitation/verify`
    - `/api/invitation` (legacy alias)
    - `/api/responses`
+   - `/api/admin/invitation`
+   - `/api/admin/invitation/preview`
+   - `/api/admin/invitation/send`
+   - `/api/admin/reset`
 5. If any variable changes later, use **Deployments → Redeploy** so functions pick up the new values.
 
 ---
@@ -211,6 +221,11 @@ Functions must also use Vercel's supported export shape: named HTTP method expor
 2. Confirm `/admin/responses` shows the current response, history, and notification status.
 3. Confirm a non-admin account is shown as unauthorized.
 4. Confirm **Log out** works.
+5. In **Invitation management**, generate a code, copy it, and confirm the status and timestamp update. In a private window, confirm the old code no longer verifies.
+6. Disable access and confirm public verification is blocked; re-enable and confirm it works. Then revoke and confirm "Not initialized" with a revoked timestamp.
+7. In **Send invitation**, generate a preview, confirm nothing was sent, then explicitly confirm and send. Check the recipient receives only the website URL and code.
+8. In **Reset proposal**, confirm the exact deletion counts, type `RESET`, leave rotation unchecked, and confirm the dashboard is empty while the invitation code is unchanged.
+9. Optionally repeat the reset with code rotation checked and confirm a new code is shown once and old sessions stop working.
 
 ### API and route checks
 
@@ -230,6 +245,7 @@ Functions must also use Vercel's supported export shape: named HTTP method expor
 3. The email subject is correct, includes the response and timestamp, and links to the admin dashboard.
 4. The email does not include the invitation code, session token, or any secret.
 5. If delivery fails, the response still succeeds and the outbox records the failure for retry.
+6. A sent invitation email includes the website URL and code, and contains no API key, hash, or session token.
 
 ---
 
@@ -237,10 +253,10 @@ Functions must also use Vercel's supported export shape: named HTTP method expor
 
 Once production tests pass and before sending the link to the first real visitor, clear all development and testing data:
 
-1. In the Supabase **SQL Editor**, paste the full contents of `supabase/reset_proposal_data.sql` and run the whole file as one query.
-2. Confirm the verification output: five data sets with `remaining_rows = 0`, the admin still listed with `app_role = 'admin'`, and all five tables present.
+1. Preferred: use the **Reset proposal** section in the admin dashboard. It performs the same cleanup through an atomic server-side RPC, records a content-free audit event, and never rotates the invitation code unless you explicitly check that option. Alternatively, in the Supabase **SQL Editor**, paste the full contents of `supabase/reset_proposal_data.sql` and run the whole file as one query.
+2. If you used the SQL script, confirm the verification output: five data sets with `remaining_rows = 0`, the admin still listed with `app_role = 'admin'`, and all five tables present.
 3. Hard-refresh `/admin/responses` and confirm the empty state: no answer, no history, no notification history, no old timestamps.
-4. In a private browser window, enter the real invitation code and submit one answer; confirm the email and the new dashboard row.
+4. In a private browser window, enter the current invitation code and submit one answer; confirm the email and the new dashboard row.
 
 The script uses transactional `DELETE` statements scoped to `roqeebah-001`. It preserves the schema, admin account, authentication, configuration, and unrelated rows. Do **not** run it after the real visitor answers. Full details and post-reset checks are in [`docs/reset.md`](docs/reset.md).
 
@@ -252,9 +268,9 @@ The following cannot be completed from this workspace and must be supplied in th
 
 - A pushed GitHub repository URL.
 - Real Supabase URL, publishable key, and secret key.
-- All five migrations applied to the live Supabase project.
+- All six migrations applied to the live Supabase project.
 - The real administrator email/password and `app_metadata.role = admin`.
-- A real private invitation code.
+- A bootstrap `INVITATION_CODE`, then a generated database-backed invitation code from the admin dashboard.
 - A long random `SESSION_SECRET`.
 - A verified Resend sender and real Resend API key.
 - The real admin notification recipient.
